@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="manifest" href="manifest.json">
+    <meta charset="UTF-8">
+    <meta name="description" content="SurferGame is an interactive browser game where you navigate a surfer through obstacles.">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SurferGame</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #87ceeb;
+            font-family: Arial, sans-serif;
+        }
+        header {
+            width: 100%;
+            background: #1e90ff;
+            color: white;
+            padding: 10px 20px;
+            box-sizing: border-box;
+        }
+        header .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        header .game-name {
+            font-size: 24px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+        }
+        header .level-score {
+            display: flex;
+            gap: 20px;
+            font-size: 18px;
+        }
+        header .health-meter {
+            margin-top: 10px;
+            display: flex;
+            justify-content: center;
+        }
+        #gameContainer {
+            position: relative;
+            width: 100%;
+            height: calc(100vh - 80px); /* Adjust height based on header */
+        }
+        canvas {
+            display: block;
+            background: #1e90ff;
+        }
+        #splashModal, #pauseModal, #readmeModal {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            display: none; /* Hide by default */
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            overflow: auto; /* Allow scrolling if content is long */
+            padding: 20px; /* Add padding for content */
+            box-sizing: border-box;
+        }
+        /* Show the splash modal by default */
+        #splashModal {
+            display: flex;
+        }
+        #buttonHolder {
+            max-width: 400px;
+        }
+        #splashModal h1, #pauseModal h1, #readmeModal h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+        .difficulty-select {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .difficulty-select button, .pause-buttons button, .splash-buttons button {
+            padding: 10px 20px;
+            font-size: 18px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background: #1e90ff;
+            color: white;
+        }
+        .difficulty-select button:hover, .pause-buttons button:hover, .splash-buttons button:hover {
+            background: #4682b4;
+        }
+        #startGame {
+            padding: 10px 30px;
+            font-size: 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background: #32cd32;
+            color: white;
+            margin-bottom: 20px; /* Add margin for spacing */
+        }
+        #startGame:hover {
+            background: #228b22;
+        }
+        .pause-buttons {
+            display: flex;
+            gap: 20px;
+        }
+        /* Styles for the wide button */
+        .wide-button {
+            width: 100%;
+            padding: 10px 20px;
+            font-size: 18px;
+            margin-top: 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background: #1e90ff;
+            color: white;
+            text-align: center;
+        }
+        .wide-button:hover {
+            background: #4682b4;
+        }
+        /* Styles for the README content */
+        #readmeContent {
+            max-width: 800px;
+            background: #ffffff;
+            color: #000000;
+            padding: 20px;
+            border-radius: 5px;
+            overflow-y: auto;
+            max-height: 80%;
+        }
+        #readmeContent h1, #readmeContent h2, #readmeContent h3, #readmeContent h4, #readmeContent h5, #readmeContent h6 {
+            color: #1e90ff;
+        }
+        #closeReadmeButton {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 18px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background: #1e90ff;
+            color: white;
+        }
+        #closeReadmeButton:hover {
+            background: #4682b4;
+        }
+        /* Responsive styles for mobile devices */
+        @media only screen and (max-width: 768px) {
+            #readmeContent {
+                max-width: 90%; /* Reduce the width on mobile */
+                max-height: 70%; /* Reduce the max height */
+                font-size: 14px; /* Decrease font size */
+            }
+            #readmeModal h1 {
+                font-size: 32px; /* Decrease heading size */
+            }
+        }
+    </style>
+    <!-- Include marked.js for Markdown parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked@4.3.0/marked.min.js"></script>
+</head>
+<body>
+    <header>
+        <div class="header-top">
+            <div class="game-name">SurferGame</div>
+            <div class="level-score">
+                <span id="levelDisplay">Level: 1</span>
+                <span id="scoreDisplay">Score: 0</span>
+            </div>
+        </div>
+        <div class="health-meter">
+            <canvas id="healthCanvas" width="100" height="30"></canvas>
+        </div>
+    </header>
+    <div id="gameContainer">
+        <div id="splashModal">
+            <h1>SurferGame</h1>
+            <div class="difficulty-select">
+                <button data-difficulty="beginner">Beginner</button>
+                <button data-difficulty="novice">Novice</button>
+                <button data-difficulty="expert">Expert</button>
+            </div>
+            <button id="startGame" disabled>Start Game</button>
+            <div class="splash-buttons">
+                <button id="viewReadme">View Instructions</button>
+            </div>
+        </div>
+        <div id="pauseModal">
+            <h1>Game Paused</h1>
+            <div id="buttonHolder">
+                <div class="pause-buttons">
+                    <button id="resumeGame">Resume</button>
+                    <button id="quitGame">Quit</button>
+                </div>
+                <!-- Main Menu button -->
+                <button id="mainMenuButton" class="wide-button">Main Menu</button>
+            </div>
+        </div>
+        <!-- Readme Modal -->
+        <div id="readmeModal">
+            <h1>Game Instructions</h1>
+            <div id="readmeContent">
+                <!-- README content will be loaded here -->
+            </div>
+            <button id="closeReadmeButton">Close</button>
+        </div>
+        <canvas id="gameCanvas"></canvas>
+    </div>
+    <script>
+        var header = document.querySelector("header");
+        var headerHeight = header.offsetHeight;
+
+        var canvas = document.getElementById("gameCanvas");
+        var ctx = canvas.getContext("2d");
+
+        var healthCanvas = document.getElementById("healthCanvas");
+        var healthCtx = healthCanvas.getContext("2d");
+
+        var levelDisplay = document.getElementById("levelDisplay");
+        var scoreDisplay = document.getElementById("scoreDisplay");
+
+        var keys = {};
+        var difficulty = "beginner";
+        var defaultSpeed = 2;
+        var baseObstacleFrequency = 100;
+
+        var isMobile = window.innerWidth <= 768;
+
+        var touchStartX = 0;
+        var touchStartY = 0;
+
+        var difficultyConfig = {
+            beginner: { speedMultiplier: 1, obstacleMultiplier: 1, playerSpeed: 4, startLevel: 1 },
+            novice: { speedMultiplier: 2, obstacleMultiplier: 3, playerSpeed: 6, startLevel: 20 },
+            expert: { speedMultiplier: 4, obstacleMultiplier: 4, playerSpeed: 10, startLevel: 30 },
+        };
+
+        var splashModal = document.getElementById("splashModal");
+        var pauseModal = document.getElementById("pauseModal");
+        var readmeModal = document.getElementById("readmeModal");
+        var readmeContent = document.getElementById("readmeContent");
+        var startGameButton = document.getElementById("startGame");
+        var resumeGameButton = document.getElementById("resumeGame");
+        var quitGameButton = document.getElementById("quitGame");
+        var mainMenuButton = document.getElementById("mainMenuButton"); // Main Menu button
+        var viewReadmeButton = document.getElementById("viewReadme");
+        var closeReadmeButton = document.getElementById("closeReadmeButton");
+        var difficultyButtons = document.querySelectorAll(".difficulty-select button");
+
+        var gameContainer = document.getElementById("gameContainer");
+
+        var nextLevelScore = 1500; // Initialize next level score
+
+        var gamePaused = false;
+        var lastTap = 0;
+        var animationFrameId = null; // Animation frame ID
+
+        difficultyButtons.forEach((button) => {
+            button.addEventListener("click", function () {
+                difficulty = this.getAttribute("data-difficulty");
+                difficultyButtons.forEach((btn) => btn.style.background = "#1e90ff");
+                this.style.background = "#4682b4";
+                startGameButton.disabled = false;
+            });
+        });
+
+        startGameButton.addEventListener("click", function () {
+            var config = difficultyConfig[difficulty];
+            defaultSpeed = 2 * config.speedMultiplier; // Reset and set default speed
+            obstacleFrequency = baseObstacleFrequency / config.obstacleMultiplier;
+            player.speed = config.playerSpeed;
+            level = config.startLevel;
+
+            // Initialize nextLevelScore based on starting level
+            nextLevelScore = 1500;
+
+            // Set surfer size based on difficulty
+            if (difficulty === "beginner") {
+                player.width = 50;
+                player.height = 50;
+            } else if (difficulty === "novice") {
+                player.width = 40;
+                player.height = 40;
+            } else if (difficulty === "expert") {
+                player.width = 30;
+                player.height = 30;
+            }
+
+            splashModal.style.display = "none";
+            startGame();
+        });
+
+        resumeGameButton.addEventListener("click", function () {
+            togglePause();
+        });
+
+        quitGameButton.addEventListener("click", function () {
+            // Attempt to close the app if running as PWA
+            if (navigator.app && navigator.app.exitApp) {
+                navigator.app.exitApp();
+            } else if (navigator.device && navigator.device.exitApp) {
+                navigator.device.exitApp();
+            } else {
+                // Attempt to close the window
+                window.close();
+                window.open('', '_self').close();
+                // Fallback: Redirect to a blank page
+                window.location.href = 'about:blank';
+                
+                // Alternatively, provide user feedback
+                alert("SurferGame will now close.");
+            }
+        });
+
+        // Event listener for Main Menu button
+        mainMenuButton.addEventListener("click", function () {
+            togglePause(); // Ensure the game is paused
+            resetGame();
+            splashModal.style.display = "flex";
+        });
+
+        // Event listener for View Instructions button
+        viewReadmeButton.addEventListener("click", function () {
+            // Fetch the README.md file
+            fetch('README.md')
+                .then(response => response.text())
+                .then(text => {
+                    // Convert Markdown to HTML using marked.parse()
+                    var htmlContent = marked.parse(text);
+                    readmeContent.innerHTML = htmlContent;
+                    // Show the README modal
+                    readmeModal.style.display = "flex";
+                })
+                .catch(error => {
+                    console.error('Error fetching README.md:', error);
+                    readmeContent.innerHTML = '<p>Error loading instructions.</p>';
+                    readmeModal.style.display = "flex";
+                });
+        });
+
+        // Event listener for Close button in README modal
+        closeReadmeButton.addEventListener("click", function () {
+            readmeModal.style.display = "none";
+        });
+
+        function resetGame() {
+            // Reset all game variables
+            difficulty = "beginner";
+            defaultSpeed = 2;
+            baseObstacleFrequency = 100;
+            nextLevelScore = 1500;
+            currentHealth = maxHealth;
+            level = 1;
+            score = 0;
+            gameSpeed = defaultSpeed;
+            frameCount = 0;
+            obstacles = [];
+            columnObstacles = [];
+            gameStarted = false;
+            gamePaused = false;
+
+            // Cancel any ongoing animation frames
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+            }
+
+            drawHealthMeter();
+            drawLevel();
+            drawScore();
+
+            // Reset difficulty button styles
+            difficultyButtons.forEach((btn) => btn.style.background = "#1e90ff");
+            startGameButton.disabled = true;
+        }
+
+        var player = {
+            x: 0,
+            y: 0,
+            width: 50,
+            height: 50,
+            speed: 4,
+            dx: 0,
+            dy: 0,
+            isInvincible: false,
+            opacity: 1,
+        };
+
+        var maxHealth = 3;
+        var currentHealth = maxHealth;
+        var level = 1;
+        var score = 0;
+        var gameSpeed = defaultSpeed;
+        var frameCount = 0;
+        var obstacles = [];
+        var columnObstacles = [];
+        var gameStarted = false;
+
+        var obstacleImages = [
+            { src: 'rock.png', points: 10, size: { width: 70, height: 70 } },
+            { src: 'shark.png', points: 50, size: { width: 50, height: 50 } },
+            { src: 'driftwood.png', points: 20, size: { width: 60, height: 60 } },
+        ];
+
+        var loadedObstacles = [];
+        var imagesLoaded = 0;
+
+        obstacleImages.forEach((obstacle) => {
+            let img = new Image();
+            img.src = obstacle.src;
+            img.onload = function () {
+                imagesLoaded++;
+                if (imagesLoaded === obstacleImages.length + 1) {
+                    // All images are loaded
+                    initializePlayerPosition();
+                }
+            };
+            loadedObstacles.push({ ...obstacle, img });
+        });
+
+        var surferImg = new Image();
+        surferImg.src = 'surfer.png';
+        surferImg.onload = function () {
+            imagesLoaded++;
+            if (imagesLoaded === obstacleImages.length + 1) {
+                // All images are loaded
+                initializePlayerPosition();
+            }
+        };
+
+        function initializePlayerPosition() {
+            player.x = canvas.width / 2 - player.width / 2;
+            player.y = canvas.height - player.height - 20;
+        }
+
+        function drawHealthMeter() {
+            healthCtx.clearRect(0, 0, healthCanvas.width, healthCanvas.height);
+
+            var heartWidth = 20;
+            var heartSpacing = 10;
+
+            for (var i = 0; i < maxHealth; i++) {
+                var x = i * (heartWidth + heartSpacing);
+
+                healthCtx.strokeStyle = 'red';
+                healthCtx.lineWidth = 2;
+                healthCtx.beginPath();
+                healthCtx.moveTo(x + heartWidth / 2, 10);
+                healthCtx.bezierCurveTo(
+                    x, 5,
+                    x, 20,
+                    x + heartWidth / 2, 30
+                );
+                healthCtx.bezierCurveTo(
+                    x + heartWidth, 20,
+                    x + heartWidth, 5,
+                    x + heartWidth / 2, 10
+                );
+                healthCtx.stroke();
+
+                if (i < currentHealth) {
+                    healthCtx.fillStyle = 'red';
+                    healthCtx.fill();
+                }
+            }
+        }
+
+        function drawLevel() {
+            levelDisplay.textContent = "Level: " + level;
+        }
+
+        function drawScore() {
+            scoreDisplay.textContent = "Score: " + score;
+        }
+
+        function checkLevelUp() {
+            if (score >= nextLevelScore) {
+                level++;
+                nextLevelScore += 1500; // Increase nextLevelScore by 1500
+                gameSpeed += 0.25;
+
+                // Dynamically adjust obstacle frequency
+                obstacleFrequency = Math.max(baseObstacleFrequency - level * 5, 50);
+
+                if (currentHealth < maxHealth) currentHealth++;
+                drawHealthMeter();
+                drawLevel();
+            }
+        }
+
+        function startGame() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight - headerHeight;
+
+            initializePlayerPosition();
+
+            gameSpeed = defaultSpeed; // Reset game speed when starting
+            frameCount = 0;
+
+            drawHealthMeter();
+            drawLevel();
+            drawScore();
+            gameStarted = true;
+            gamePaused = false;
+
+            // Start the loop if it's not already running
+            if (!animationFrameId) {
+                animationFrameId = requestAnimationFrame(loop);
+            }
+        }
+
+        function update() {
+            if (!gamePaused) {
+                if (isMobile) {
+                    // Movement is handled by touch events
+                } else {
+                    // Keyboard controls for desktop
+                    if (keys["ArrowLeft"] || keys["a"]) {
+                        player.dx = -player.speed;
+                    } else if (keys["ArrowRight"] || keys["d"]) {
+                        player.dx = player.speed;
+                    } else {
+                        player.dx = 0;
+                    }
+
+                    if (keys["ArrowUp"] || keys["w"]) {
+                        player.dy = -player.speed;
+                    } else if (keys["ArrowDown"] || keys["s"]) {
+                        player.dy = player.speed;
+                    } else {
+                        player.dy = 0;
+                    }
+
+                    player.x += player.dx;
+                    player.y += player.dy;
+                }
+
+                // Add horizontal boundaries
+                var boundaryOffset = 0;
+                if (level >= 10) boundaryOffset += (isMobile ? 35 : 70);
+                if (level >= 20) boundaryOffset += (isMobile ? 35 : 70);
+                if (level >= 30) boundaryOffset += (isMobile ? 35 : 70);
+
+                player.x = Math.max(boundaryOffset, player.x);
+                player.x = Math.min(canvas.width - player.width - boundaryOffset, player.x);
+
+                // Add vertical boundaries
+                player.y = Math.max(0, player.y);
+                player.y = Math.min(canvas.height - player.height, player.y);
+
+                // Generate obstacles only if the game has started
+                if (gameStarted) {
+                    frameCount++;
+                    if (frameCount % Math.floor(obstacleFrequency) === 0) {
+                        createObstacle();
+                    }
+
+                    generateLevelColumns();
+                }
+
+                // Update obstacles
+                for (var i = 0; i < obstacles.length; i++) {
+                    obstacles[i].y += gameSpeed;
+
+                    if (!player.isInvincible && isColliding(player, obstacles[i])) {
+                        handleCollision();
+                        obstacles.splice(i, 1);
+                        i--;
+                    } else if (obstacles[i].y > canvas.height) {
+                        score += obstacles[i].points;
+                        drawScore();
+                        obstacles.splice(i, 1);
+                        i--;
+                    }
+                }
+
+                // Update column obstacles
+                for (var i = 0; i < columnObstacles.length; i++) {
+                    columnObstacles[i].y += gameSpeed / 2; // Move slower
+                    if (isColliding(player, columnObstacles[i])) {
+                        handleCollision();
+                    }
+                    if (columnObstacles[i].y > canvas.height) {
+                        columnObstacles[i].y = -columnObstacles[i].height - 150; // Increase spacing
+                    }
+                }
+
+                checkLevelUp();
+            }
+        }
+
+        function draw() {
+            if (!gamePaused) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                ctx.globalAlpha = player.opacity;
+                ctx.drawImage(surferImg, player.x, player.y, player.width, player.height);
+                ctx.globalAlpha = 1;
+
+                // Draw obstacles
+                for (var i = 0; i < obstacles.length; i++) {
+                    ctx.drawImage(
+                        obstacles[i].img,
+                        obstacles[i].x,
+                        obstacles[i].y,
+                        obstacles[i].width,
+                        obstacles[i].height
+                    );
+                }
+
+                // Draw column obstacles
+                for (var i = 0; i < columnObstacles.length; i++) {
+                    ctx.drawImage(
+                        columnObstacles[i].img,
+                        columnObstacles[i].x,
+                        columnObstacles[i].y,
+                        columnObstacles[i].width,
+                        columnObstacles[i].height
+                    );
+                }
+            }
+        }
+
+        function loop() {
+            animationFrameId = requestAnimationFrame(loop);
+            update();
+            draw();
+        }
+
+        document.addEventListener("keydown", function (e) {
+            keys[e.key] = true;
+            if (e.key === "Escape") {
+                togglePause();
+            }
+        });
+
+        document.addEventListener("keyup", function (e) {
+            keys[e.key] = false;
+        });
+
+        if (isMobile) {
+            let tapTimeout;
+            canvas.addEventListener("touchstart", handleTouchStart, false);
+            canvas.addEventListener("touchmove", handleTouchMove, false);
+            canvas.addEventListener("touchend", handleTouchEnd, false);
+
+            function handleTouchStart(e) {
+                e.preventDefault();
+                var currentTime = new Date().getTime();
+                var tapLength = currentTime - lastTap;
+                if (tapLength < 300 && tapLength > 0) {
+                    togglePause();
+                } else {
+                    var touch = e.touches[0];
+                    touchStartX = touch.clientX;
+                    touchStartY = touch.clientY;
+                }
+                lastTap = currentTime;
+            }
+
+            function handleTouchMove(e) {
+                e.preventDefault();
+                var touch = e.touches[0];
+                var touchEndX = touch.clientX;
+                var touchEndY = touch.clientY;
+
+                var deltaX = touchEndX - touchStartX;
+                var deltaY = touchEndY - touchStartY;
+
+                player.x += deltaX;
+                player.y += deltaY;
+
+                touchStartX = touchEndX;
+                touchStartY = touchEndY;
+
+                // Add horizontal boundaries
+                var boundaryOffset = 0;
+                if (level >= 10) boundaryOffset += 35;
+                if (level >= 20) boundaryOffset += 35;
+                if (level >= 30) boundaryOffset += 35;
+
+                player.x = Math.max(boundaryOffset, player.x);
+                player.x = Math.min(canvas.width - player.width - boundaryOffset, player.x);
+
+                // Add vertical boundaries
+                player.y = Math.max(0, player.y);
+                player.y = Math.min(canvas.height - player.height, player.y);
+            }
+
+            function handleTouchEnd(e) {
+                e.preventDefault();
+                // No action needed on touch end
+            }
+        } else {
+            canvas.addEventListener("click", function () {
+                togglePause();
+            });
+        }
+
+        function togglePause() {
+            gamePaused = !gamePaused;
+            if (gamePaused) {
+                pauseModal.style.display = "flex";
+            } else {
+                pauseModal.style.display = "none";
+            }
+        }
+
+        function isColliding(a, b) {
+            return a.x < b.x + b.width &&
+                a.x + a.width > b.x &&
+                a.y < b.y + b.height &&
+                a.y + a.height > b.y;
+        }
+
+        function handleCollision() {
+            if (!player.isInvincible) {
+                currentHealth--;
+                if (currentHealth <= 0) {
+                    alert("Game Over!");
+                    resetGame();
+                    splashModal.style.display = "flex";
+                }
+
+                player.isInvincible = true;
+                player.opacity = 0.5;
+
+                let blinkCount = 0;
+                const blinkInterval = setInterval(() => {
+                    player.opacity = player.opacity === 0.5 ? 1 : 0.5;
+                    blinkCount++;
+                    if (blinkCount >= 6) {
+                        clearInterval(blinkInterval);
+                        player.isInvincible = false;
+                        player.opacity = 1;
+                    }
+                }, 500);
+
+                drawHealthMeter();
+            }
+        }
+
+        function createObstacle() {
+            var obstacleType = loadedObstacles[Math.floor(Math.random() * loadedObstacles.length)];
+            var sizeMultiplier = isMobile ? 0.5 : 1; // Half size on mobile
+            var obstacleWidth = obstacleType.size.width * sizeMultiplier;
+            var obstacleHeight = obstacleType.size.height * sizeMultiplier;
+            var obstacle = {
+                x: Math.random() * (canvas.width - obstacleWidth),
+                y: -obstacleHeight,
+                width: obstacleWidth,
+                height: obstacleHeight,
+                img: obstacleType.img,
+                points: obstacleType.points,
+            };
+            obstacles.push(obstacle);
+        }
+
+        function generateLevelColumns() {
+            if (level >= 10 && frameCount % 60 === 0) {
+                createColumnObstacle("rock", 0); // Far left
+                createColumnObstacle("rock", canvas.width - (isMobile ? 35 : 70)); // Far right
+            }
+            if (level >= 20 && frameCount % 90 === 0) {
+                createColumnObstacle("driftwood", isMobile ? 35 : 70); // Inside left rock
+                createColumnObstacle("driftwood", canvas.width - (isMobile ? 70 : 140)); // Inside right rock
+            }
+            if (level >= 30 && frameCount % 120 === 0) {
+                createColumnObstacle("shark", isMobile ? 70 : 140); // Inside left driftwood
+                createColumnObstacle("shark", canvas.width - (isMobile ? 105 : 210)); // Inside right driftwood
+            }
+        }
+
+        function createColumnObstacle(type, xPosition) {
+            var obstacleType = loadedObstacles.find((obs) => obs.img.src.includes(type));
+            if (!obstacleType) return;
+
+            var sizeMultiplier = isMobile ? 0.5 : 1; // Half size on mobile
+            var obstacleWidth = obstacleType.size.width * sizeMultiplier;
+            var obstacleHeight = obstacleType.size.height * sizeMultiplier;
+
+            var columnObstacle = {
+                x: xPosition,
+                y: -obstacleHeight - 150,
+                width: obstacleWidth,
+                height: obstacleHeight,
+                img: obstacleType.img,
+                points: 0, // Column obstacles do not give points
+            };
+
+            columnObstacles.push(columnObstacle);
+        }
+
+        // Initialize modals display
+        // Show splash modal by default
+        splashModal.style.display = 'flex';
+        pauseModal.style.display = 'none';
+        readmeModal.style.display = 'none';
+    </script>
+    <script>
+        if ('serviceWorker' in navigator) {
+          window.addEventListener('load', function () {
+            navigator.serviceWorker
+              .register('service-worker.js')
+              .then(function (registration) {
+                console.log('Service Worker registered with scope:', registration.scope);
+
+                // Listen for updates to the service worker.
+                registration.addEventListener('updatefound', function () {
+                  const installingWorker = registration.installing;
+                  installingWorker.addEventListener('statechange', function () {
+                    if (installingWorker.state === 'installed') {
+                      if (navigator.serviceWorker.controller) {
+                        // New update available
+                        console.log('New content is available; please refresh.');
+                        // Optionally, prompt the user to refresh
+                        showUpdatePrompt();
+                      } else {
+                        // Content is cached for offline use
+                        console.log('Content is cached for offline use.');
+                      }
+                    }
+                  });
+                });
+              })
+              .catch(function (err) {
+                console.log('Service Worker registration failed:', err);
+              });
+          });
+        }
+
+        function showUpdatePrompt() {
+          // Implement a user-friendly way to notify about the update
+          const updateNotification = document.createElement('div');
+          updateNotification.style.position = 'fixed';
+          updateNotification.style.bottom = '20px';
+          updateNotification.style.left = '50%';
+          updateNotification.style.transform = 'translateX(-50%)';
+          updateNotification.style.background = '#1e90ff';
+          updateNotification.style.color = 'white';
+          updateNotification.style.padding = '10px 20px';
+          updateNotification.style.borderRadius = '5px';
+          updateNotification.style.zIndex = '1000';
+          updateNotification.innerText = 'New update available. Click to refresh.';
+          updateNotification.style.cursor = 'pointer';
+          updateNotification.onclick = function () {
+            // Send message to service worker to skip waiting
+            if (navigator.serviceWorker.controller) {
+              navigator.serviceWorker.controller.postMessage({ action: 'skipWaiting' });
+            }
+            // Reload the page to load the new service worker and updated content
+            window.location.reload();
+          };
+          document.body.appendChild(updateNotification);
+        }
+    </script>
+</body>
+</html>
