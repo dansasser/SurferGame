@@ -1,4 +1,4 @@
-![SurferGame](icon-521.png)
+![SurferGame](./icon-521.png)
 
 # SurferGame
 
