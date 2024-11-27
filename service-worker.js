@@ -1,4 +1,4 @@
-const CACHE_NAME = 'surf-game-cache-v3.06'; // Updated cache name to force cache update
+const CACHE_NAME = 'surf-game-cache-v3.08'; // Updated cache name to force cache update
 const urlsToCache = [
   './',
   'index.html',
