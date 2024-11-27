@@ -1,3 +1,5 @@
+![SurferGame](icon-521.png)
+
 # SurferGame
 
 SurferGame is an exciting browser-based game where you control a surfer navigating through the ocean, avoiding obstacles like rocks, sharks, and driftwood. The game features multiple difficulty levels, a scoring system, health meter, and progressive levels that increase in challenge as you play. It is designed to be played on both desktop and mobile devices and can be installed as a Progressive Web App (PWA) for offline play. 
