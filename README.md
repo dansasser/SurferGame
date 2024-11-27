@@ -1,6 +1,8 @@
 # SurferGame
 
-SurferGame is an exciting browser-based game where you control a surfer navigating through the ocean, avoiding obstacles like rocks, sharks, and driftwood. The game features multiple difficulty levels, a scoring system, health meter, and progressive levels that increase in challenge as you play. It is designed to be played on both desktop and mobile devices and can be installed as a Progressive Web App (PWA) for offline play. See a working example at [**SurferGame by Gorombo**](https://gorombo.com/surfer/)
+SurferGame is an exciting browser-based game where you control a surfer navigating through the ocean, avoiding obstacles like rocks, sharks, and driftwood. The game features multiple difficulty levels, a scoring system, health meter, and progressive levels that increase in challenge as you play. It is designed to be played on both desktop and mobile devices and can be installed as a Progressive Web App (PWA) for offline play. 
+
+See a working example at [**SurferGame by Gorombo**](https://gorombo.com/surfer/)
 
 ## Table of Contents
 
@@ -82,7 +84,7 @@ In SurferGame, you control a surfer navigating through an endless ocean, avoidin
    Clone the repository or download the ZIP file and extract it to your desired location.
 
    ```bash
-   git clone https://github.com/yourusername/SurferGame.git
+   git clone https://github.com/dansasser/SurferGame.git
    ```
 
 2. **Project Structure**
@@ -205,5 +207,7 @@ Ensure that the following image files are in the same directory as `index.html`:
 
 - **ChatGPT**: For assistance in developing and refining the game code.
 - **OpenAI**: For providing the AI model that facilitated development.
-- **Game Asset Creators**: Credit to any artists or sources for the images used in the game (if applicable).
+- **Game Asset Creators**: Daniel T Sasser II.
+- **Game Development**: [**Gorombo**](https://gorombo.com)
+- **Articles and Discussions**: [**Dan Sasser's Blog**](https://dansasser.me)
 

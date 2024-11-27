@@ -13,6 +13,16 @@
             background: #87ceeb;
             font-family: Arial, sans-serif;
         }
+        #desktpControlInstructions{
+            display: none;
+            opacity: 0;
+            padding: 1rem;
+              @media only screen and (min-width: 768px) {
+                display: inline-block;
+                opacity: 1;
+              }
+
+        }
         header {
             width: 100%;
             background: #1e90ff;
@@ -194,6 +204,7 @@
             <div class="splash-buttons">
                 <button id="viewReadme">View Instructions</button>
             </div>
+            <div id="desktpControlInstructions">Use the → ↑ ← ↓ keys to control the surfer</div>
         </div>
         <div id="pauseModal">
             <h1>Game Paused</h1>
